@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Performance Predictor</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background:#f2f2f2;
+        }
+
+        .container{
+            width:450px;
+            margin:30px auto;
+            background:white;
+            padding:20px;
+            border:1px solid #ccc;
+        }
+
+        h1{
+            text-align:center;
+        }
+
+        label{
+            display:block;
+            margin-top:10px;
+            margin-bottom:5px;
+        }
+
+        input{
+            width:100%;
+            padding:8px;
+            box-sizing:border-box;
+        }
+
+        button{
+            width:100%;
+            padding:10px;
+            margin-top:15px;
+            background:blue;
+            color:white;
+            border:none;
+            cursor:pointer;
+        }
+
+        button:hover{
+            background:darkblue;
+        }
+
+        #result{
+            margin-top:15px;
+            padding:10px;
+            border:1px solid gray;
+            text-align:center;
+        }
+
+        #status{
+            text-align:center;
+            color:green;
+            margin-bottom:10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Student Performance Predictor</h1>
+
+    <p id="status">Training ML Model...</p>
+
+    <label>Study Hours Per Day</label>
+    <input type="number" id="studyHours">
+
+    <label>Attendance (%)</label>
+    <input type="number" id="attendance">
+
+    <label>Previous Marks</label>
+    <input type="number" id="previousMarks">
+
+    <label>Assignments Completed (%)</label>
+    <input type="number" id="assignments">
+
+    <label>Class Participation (%)</label>
+    <input type="number" id="activities">
+
+    <button onclick="predictPerformance()">
+        Predict Performance
+    </button>
+
+    <div id="result">
+        Prediction will appear here
+    </div>
+
+</div>
+
+<script>
+
+let model;
+
+async function trainModel(){
+
+    const xs = tf.tensor2d([
+
+        [2,60,50,40,30],
+        [3,65,55,50,40],
+        [4,70,60,60,50],
+        [5,75,65,70,60],
+        [6,80,70,80,70],
+        [7,85,75,85,75],
+        [8,90,80,90,80],
+        [9,92,85,95,85],
+        [10,95,90,100,90],
+        [11,98,95,100,95]
+
+    ]);
+
+    const ys = tf.tensor2d([
+        [45],
+        [50],
+        [58],
+        [65],
+        [72],
+        [80],
+        [86],
+        [90],
+        [95],
+        [98]
+    ]);
+
+    model = tf.sequential();
+
+    model.add(tf.layers.dense({
+        inputShape:[5],
+        units:10,
+        activation:'relu'
+    }));
+
+    model.add(tf.layers.dense({
+        units:1
+    }));
+
+    model.compile({
+        optimizer:'adam',
+        loss:'meanSquaredError'
+    });
+
+    await model.fit(xs, ys, {
+        epochs:300,
+        verbose:0
+    });
+
+    document.getElementById("status").innerHTML =
+        "ML Model Ready";
+}
+
+async function predictPerformance(){
+
+    if(!model){
+        alert("Model is still training");
+        return;
+    }
+
+    let studyHours =
+        Number(document.getElementById("studyHours").value);
+
+    let attendance =
+        Number(document.getElementById("attendance").value);
+
+    let previousMarks =
+        Number(document.getElementById("previousMarks").value);
+
+    let assignments =
+        Number(document.getElementById("assignments").value);
+
+    let activities =
+        Number(document.getElementById("activities").value);
+
+    const input = tf.tensor2d([
+        [
+            studyHours,
+            attendance,
+            previousMarks,
+            assignments,
+            activities
+        ]
+    ]);
+
+    const prediction =
+        model.predict(input);
+
+    const value =
+        prediction.dataSync()[0];
+
+    let grade = "";
+
+    if(value >= 85){
+        grade = "Excellent";
+    }
+    else if(value >= 70){
+        grade = "Good";
+    }
+    else if(value >= 50){
+        grade = "Average";
+    }
+    else{
+        grade = "Needs Improvement";
+    }
+
+    document.getElementById("result").innerHTML =
+        "Predicted Score: "
+        + value.toFixed(2)
+        + "<br><br>Performance: "
+        + grade;
+}
+
+trainModel();
+
+</script>
+
+</body>
+</html>
